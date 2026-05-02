@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🎈 Hong Kong Tourist Attractions Balloon Game</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    font-family: "PingFang HK", "Microsoft JhengHei", Arial, sans-serif;
+    background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 50%, #FFE4B5 100%);
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+  
+  #gameContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .cloud {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .cloud1 { width: 120px; height: 45px; top: 12%; left: 8%; animation: float 25s linear infinite; }
+  .cloud2 { width: 160px; height: 55px; top: 30%; right: 10%; animation: float 30s linear infinite reverse; }
+  .cloud3 { width: 100px; height: 40px; top: 55%; left: 65%; animation: float 35s linear infinite; }
+  
+  @keyframes float {
+    0% { transform: translateX(-60px); }
+    100% { transform: translateX(60px); }
+  }
+  
+  #hud {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    z-index: 100;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .hud-item {
+    background: white;
+    padding: 7px 13px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 16px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .score { color: #ff6b35; }
+  .lives { color: #e63946; }
+  .timer { color: #1d3557; }
+  .level { color: #2a9d8f; }
+  
+  #musicBtn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: white;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 150;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  #musicBtn:active { transform: scale(0.92); }
+  
+  #question {
+    position: absolute;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    padding: 14px 26px;
+    border-radius: 28px;
+    font-size: 20px;
+    font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+    z-index: 50;
+    text-align: center;
+    max-width: 94%;
+    animation: pulse 2s infinite;
+  }
+  
+  .q-hk { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); }
+  .q-kln { background: linear-gradient(135deg, #f7b731, #f59f00); }
+  .q-nt { background: linear-gradient(135deg, #20bf6b, #0fb9b1); }
+  
+  @keyframes pulse {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.04); }
+  }
+  
+  .balloon {
+    position: absolute;
+    width: 150px;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.1s;
+  }
+  
+  .balloon:active { transform: scale(0.92); }
+  
+  .balloon-body {
+    width: 150px;
+    height: 175px;
+    border-radius: 50% 50% 45% 45%;
+    position: relative;
+    box-shadow: inset -14px -14px 22px rgba(0,0,0,0.2), 0 6px 14px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+  }
+  
+  .balloon-body::before {
+    content: '';
+    position: absolute;
+    top: 12%;
+    left: 18%;
+    width: 28px;
+    height: 35px;
+    background: rgba(255,255,255,0.55);
+    border-radius: 50%;
+    filter: blur(2px);
+  }
+  
+  .balloon-body::after {
+    content: '';
+    position: absolute;
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-top: 16px solid currentColor;
+  }
+  
+  .balloon-string {
+    width: 2px;
+    height: 38px;
+    background: #555;
+    margin: 0 auto;
+  }
+  
+  .balloon-text {
+    color: white;
+    font-weight: bold;
+    font-size: 16px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    text-align: center;
+    line-height: 1.2;
+    pointer-events: none;
+  }
+  
+  .balloon-text .area-tag {
+    font-size: 13px;
+    opacity: 0.9;
+    display: block;
+    margin-top: 3px;
+  }
+  
+  .pop {
+    position: absolute;
+    pointer-events: none;
+    z-index: 20;
+    font-size: 90px;
+    animation: popAnim 0.5s ease-out forwards;
+  }
+  
+  @keyframes popAnim {
+    0% { transform: scale(0.5); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+  
+  .floating-score {
+    position: absolute;
+    font-size: 30px;
+    font-weight: bold;
+    pointer-events: none;
+    z-index: 30;
+    animation: floatUp 1.2s ease-out forwards;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  }
+  
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-100px); opacity: 0; }
+  }
+  
+  #startScreen, #endScreen {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+    padding: 20px;
+  }
+  
+  .panel {
+    background: white;
+    border-radius: 25px;
+    padding: 30px 24px;
+    text-align: center;
+    max-width: 460px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+  
+  .panel h1 { color: #1d3557; margin-bottom: 14px; font-size: 26px; }
+  .panel h2 { color: #e63946; margin-bottom: 16px; font-size: 24px; }
+  .panel p { color: #555; line-height: 1.7; margin-bottom: 7px; font-size: 15px; }
+  
+  .region-legend {
+    display: flex;
+    justify-content: space-around;
+    margin: 16px 0;
+    gap: 7px;
+  }
+  
+  .region-tag {
+    padding: 9px 7px;
+    border-radius: 13px;
+    color: white;
+    font-weight: bold;
+    font-size: 13px;
+    flex: 1;
+  }
+  
+  .tag-hk { background: linear-gradient(135deg, #ff6b6b, #ee5a6f); }
+  .tag-kln { background: linear-gradient(135deg, #f7b731, #f59f00); }
+  .tag-nt { background: linear-gradient(135deg, #20bf6b, #0fb9b1); }
+  
+  .btn {
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    color: white;
+    border: none;
+    padding: 14px 36px;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(255,107,53,0.4);
+  }
+  
+  .btn:active { transform: scale(0.95); }
+  
+  .stats {
+    background: #f1faee;
+    padding: 16px;
+    border-radius: 14px;
+    margin: 16px 0;
+  }
+  
+  .stats div {
+    margin: 5px 0;
+    font-size: 16px;
+    color: #1d3557;
+  }
+  
+  .hidden { display: none !important; }
+  
+  @media (max-width: 480px) {
+    #question { font-size: 16px; padding: 11px 18px; top: 90px; }
+    .hud-item { font-size: 13px; padding: 5px 10px; }
+    .balloon { width: 130px; }
+    .balloon-body { width: 130px; height: 152px; }
+    .balloon-text { font-size: 14px; }
+    .balloon-text .area-tag { font-size: 11px; }
+    .panel h1 { font-size: 22px; }
+    .panel p { font-size: 14px; }
+    .region-tag { font-size: 12px; padding: 7px 5px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+  <div class="cloud cloud1"></div>
+  <div class="cloud cloud2"></div>
+  <div class="cloud cloud3"></div>
+  
+  <button id="musicBtn" onclick="toggleMusic()" title="Music">🔊</button>
+  
+  <div id="hud" class="hidden">
+    <div class="hud-item score">⭐ <span id="scoreVal">0</span></div>
+    <div class="hud-item lives">❤️ <span id="livesVal">3</span></div>
+    <div class="hud-item timer">⏱️ <span id="timerVal">60</span>s</div>
+    <div class="hud-item level">🎯 Lv.<span id="levelVal">1</span></div>
+  </div>
+  
+  <div id="question" class="hidden q-hk">Get ready...</div>
+  
+  <div id="startScreen">
+    <div class="panel">
+      <h1>🎈 HK Tourist Attractions</h1>
+      <p style="font-size:17px;color:#1d3557;font-weight:bold;">分辨景點屬於邊個區域！</p>
+      
+      <div class="region-legend">
+        <div class="region-tag tag-hk">🏙️<br>Hong Kong Island</div>
+        <div class="region-tag tag-kln">🌆<br>Kowloon</div>
+        <div class="region-tag tag-nt">🌳<br>New Territories</div>
+      </div>
+      
+      <p>🎯 撳啱題目要求區域嘅景點汽球</p>
+      <p>⭐ 答啱 +10 分 | ❌ 答錯扣 1 條命</p>
+      <p>⏱️ 60 秒挑戰 | ❤️ 3 條命</p>
+      <p style="margin-top:10px;color:#999;font-size:13px;">💡 每答啱 5 題升 1 級 | 🎵 右上角可關閉音樂</p>
+      
+      <button class="btn" onclick="startGame()">🚀 Start Game</button>
+    </div>
+  </div>
+  
+  <div id="endScreen" class="hidden">
+    <div class="panel">
+      <h2 id="endTitle">🎉 Game Over!</h2>
+      <div class="stats">
+        <div>⭐ Final Score: <strong id="finalScore">0</strong></div>
+        <div>✅ Correct: <strong id="correctCount">0</strong></div>
+        <div>❌ Wrong: <strong id="wrongCount">0</strong></div>
+        <div>🏆 Level Reached: <strong id="finalLevel">1</strong></div>
+      </div>
+      <p id="rank" style="font-size:17px;font-weight:bold;color:#2a9d8f;">⭐⭐⭐</p>
+      <button class="btn" onclick="restartGame()">🔄 Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const attractions = {
+  "Hong Kong Island": [
+    { name: "Golden Bauhinia Square", area: "Wan Chai" },
+    { name: "Stanley Market", area: "Stanley" },
+    { name: "Tai Kwun", area: "Central" },
+    { name: "Repulse Bay", area: "" },
+    { name: "The Peak", area: "" },
+    { name: "Victoria Harbour", area: "" }
+  ],
+  "Kowloon": [
+    { name: "Kai Tak Sports Park", area: "Kai Tak" },
+    { name: "Clock Tower", area: "Tsim Sha Tsui" },
+    { name: "West Kowloon Cultural District", area: "West Kowloon" },
+    { name: "Kowloon Walled City Park", area: "Kowloon City" },
+    { name: "Wong Tai Sin Temple", area: "Wong Tai Sin" }
+  ],
+  "New Territories": [
+    { name: "Hong Kong Geopark", area: "Sai Kung" },
+    { name: "Hong Kong Wetland Park", area: "Tin Shui Wai" },
+    { name: "Lamma Island", area: "" },
+    { name: "Mai Po", area: "" },
+    { name: "Ngong Ping 360", area: "Lantau Island" },
+    { name: "The Big Buddha", area: "Lantau Island" },
+    { name: "Tai O", area: "" }
+  ]
+};
+
+const regionInfo = {
+  "Hong Kong Island": { emoji: "🏙️", color: "#ff6b6b", class: "q-hk" },
+  "Kowloon": { emoji: "🌆", color: "#f7b731", class: "q-kln" },
+  "New Territories": { emoji: "🌳", color: "#20bf6b", class: "q-nt" }
+};
+
+const balloonColors = ["#ff6b6b", "#4ecdc4", "#ffe66d", "#a8e6cf", "#ff8b94", "#c7ceea", "#ffaaa5", "#b4e7ce", "#ffd3b6", "#95e1d3", "#fce38a"];
+
+let score = 0, lives = 3, timer = 60, level = 1;
+let correctCount = 0, wrongCount = 0;
+let currentTargetRegion = null;
+let balloonInterval, timerInterval, animFrame;
+let balloons = [];
+let gameRunning = false;
+
+// ============== AUDIO SYSTEM ==============
+let audioCtx = null;
+let musicOn = true;
+let musicTimeout = null;
+let musicGain = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      musicGain = audioCtx.createGain();
+      musicGain.gain.value = 0.15;
+      musicGain.connect(audioCtx.destination);
+    } catch(e) { console.log('Audio not supported'); }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+// 播放單個音符（用於旋律）
+function playNote(freq, startTime, duration, type = 'triangle', volume = 0.3) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  
+  osc.connect(gain);
+  gain.connect(musicGain);
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.05);
+}
+
+// 音符頻率表 (C major)
+const NOTES = {
+  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00,
+  C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00
+};
+
+// 輕快旋律（C major，類似主題曲調調）
+const melody = [
+  // [音符, 拍數]
+  ['C5', 0.5], ['E5', 0.5], ['G5', 0.5], ['E5', 0.5],
+  ['F5', 0.5], ['D5', 0.5], ['C5', 1],
+  ['D5', 0.5], ['F5', 0.5], ['A5', 0.5], ['F5', 0.5],
+  ['G5', 0.5], ['E5', 0.5], ['D5', 1],
+  ['C5', 0.5], ['E5', 0.5], ['G5', 0.5], ['C5', 0.5],
+  ['A4', 0.5], ['G4', 0.5], ['F4', 1],
+  ['G4', 0.5], ['A4', 0.5], ['B4', 0.5], ['C5', 0.5],
+  ['D5', 0.5], ['E5', 0.5], ['C5', 1],
+];
+
+// 低音伴奏（每小節一個和弦根音）
+const bassLine = [
+  ['C3', 2], ['F3', 2],
+  ['D3', 2], ['G3', 2],
+  ['C3', 2], ['F3', 2],
+  ['G3', 2], ['C3', 2],
+];
+
+const BPM = 120;
+const beatDuration = 60 / BPM;
+
+function scheduleMusicLoop() {
+  if (!audioCtx || !musicOn) return;
+  
+  const now = audioCtx.currentTime;
+  let t = now + 0.05;
+  
+  // 旋律
+  let melodyTime = t;
+  melody.forEach(([note, beats]) => {
+    const dur = beats * beatDuration;
+    playNote(NOTES[note], melodyTime, dur * 0.9, 'triangle', 0.25);
+    melodyTime += dur;
+  });
+  
+  // 低音
+  let bassTime = t;
+  bassLine.forEach(([note, beats]) => {
+    const dur = beats * beatDuration;
+    playNote(NOTES[note], bassTime, dur * 0.95, 'sine', 0.35);
+    // 加少少和弦音色（每拍一下）
+    for (let i = 0; i < beats; i++) {
+      playNote(NOTES[note] * 2, bassTime + i * beatDuration, beatDuration * 0.3, 'sine', 0.08);
+    }
+    bassTime += dur;
+  });
+  
+  // 計算總長度，loop
+  const totalBeats = melody.reduce((sum, [_, b]) => sum + b, 0);
+  const loopDuration = totalBeats * beatDuration * 1000;
+  
+  musicTimeout = setTimeout(scheduleMusicLoop, loopDuration);
+}
+
+function startMusic() {
+  initAudio();
+  if (!audioCtx) return;
+  if (musicTimeout) clearTimeout(musicTimeout);
+  if (musicOn) scheduleMusicLoop();
+}
+
+function stopMusic() {
+  if (musicTimeout) {
+    clearTimeout(musicTimeout);
+    musicTimeout = null;
+  }
+  if (musicGain) {
+    musicGain.gain.setValueAtTime(musicGain.gain.value, audioCtx.currentTime);
+    musicGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+    setTimeout(() => {
+      if (musicGain) musicGain.gain.value = 0.15;
+    }, 400);
+  }
+}
+
+function toggleMusic() {
+  initAudio();
+  musicOn = !musicOn;
+  document.getElementById('musicBtn').textContent = musicOn ? '🔊' : '🔇';
+  if (musicOn) {
+    startMusic();
+  } else {
+    stopMusic();
+  }
+}
+
+// 音效
+function playSFX(type) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  
+  if (type === 'correct') {
+    // 上升音 - 開心
+    playNote(NOTES.C5, now, 0.1, 'square', 0.2);
+    playNote(NOTES.E5, now + 0.08, 0.1, 'square', 0.2);
+    playNote(NOTES.G5, now + 0.16, 0.2, 'square', 0.2);
+  } else if (type === 'wrong') {
+    // 下降音 - 失誤
+    playNote(NOTES.A4, now, 0.15, 'sawtooth', 0.2);
+    playNote(NOTES.E4, now + 0.1, 0.25, 'sawtooth', 0.2);
+  } else if (type === 'pop') {
+    // 爆破聲
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(100, now + 0.1);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.12);
+  } else if (type === 'levelup') {
+    playNote(NOTES.C5, now, 0.1, 'triangle', 0.25);
+    playNote(NOTES.E5, now + 0.1, 0.1, 'triangle', 0.25);
+    playNote(NOTES.G5, now + 0.2, 0.1, 'triangle', 0.25);
+    playNote(NOTES.C5 * 2, now + 0.3, 0.3, 'triangle', 0.25);
+  }
+}
+// ============== END AUDIO ==============
+
+const container = document.getElementById('gameContainer');
+const hud = document.getElementById('hud');
+const questionEl = document.getElementById('question');
+
+function startGame() {
+  initAudio();
+  if (musicOn) startMusic();
+  
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('endScreen').classList.add('hidden');
+  hud.classList.remove('hidden');
+  questionEl.classList.remove('hidden');
+  
+  score = 0; lives = 3; timer = 60; level = 1;
+  correctCount = 0; wrongCount = 0;
+  balloons.forEach(b => b.element.remove());
+  balloons = [];
+  gameRunning = true;
+  
+  updateHUD();
+  newQuestion();
+  
+  timerInterval = setInterval(() => {
+    timer--;
+    updateHUD();
+    if (timer <= 0) endGame();
+  }, 1000);
+  
+  spawnBalloon();
+  balloonInterval = setInterval(spawnBalloon, 1500);
+  
+  if (!animFrame) updateBalloons();
+}
+
+function newQuestion() {
+  const regions = Object.keys(attractions);
+  let next;
+  do {
+    next = regions[Math.floor(Math.random() * regions.length)];
+  } while (next === currentTargetRegion && regions.length > 1);
+  currentTargetRegion = next;
+  
+  const info = regionInfo[currentTargetRegion];
+  questionEl.className = info.class;
+  questionEl.innerHTML = `${info.emoji} Tap attractions in <strong>${currentTargetRegion}</strong>!`;
+}
+
+function spawnBalloon() {
+  if (!gameRunning) return;
+  if (balloons.length > 6) return;
+  
+  let attraction, region, isCorrect;
+  if (Math.random() < 0.45) {
+    region = currentTargetRegion;
+    isCorrect = true;
+  } else {
+    const others = Object.keys(attractions).filter(r => r !== currentTargetRegion);
+    region = others[Math.floor(Math.random() * others.length)];
+    isCorrect = false;
+  }
+  
+  const list = attractions[region];
+  attraction = list[Math.floor(Math.random() * list.length)];
+  
+  const balloon = document.createElement('div');
+  balloon.className = 'balloon';
+  
+  const color = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+  const displayText = attraction.area 
+    ? `${attraction.name}<span class="area-tag">(${attraction.area})</span>`
+    : attraction.name;
+  
+  balloon.innerHTML = `
+    <div class="balloon-body" style="background:${color};color:${color};">
+      <div class="balloon-text">${displayText}</div>
+    </div>
+    <div class="balloon-string"></div>
+  `;
+  
+  const balloonWidth = window.innerWidth < 480 ? 130 : 150;
+  const startX = Math.random() * (window.innerWidth - balloonWidth - 20) + 10;
+  balloon.style.left = startX + 'px';
+  balloon.style.bottom = '-220px';
+  
+  container.appendChild(balloon);
+  
+  // 再加快：0.7~1.15 + level*0.18
+  const speed = 0.7 + Math.random() * 0.45 + level * 0.18;
+  const swayAmp = 25 + Math.random() * 30;
+  const swayFreq = 0.0015 + Math.random() * 0.0015;
+  
+  const balloonObj = { 
+    element: balloon, 
+    isCorrect, 
+    region,
+    name: attraction.name,
+    y: 0, 
+    speed, 
+    baseX: startX,
+    swayAmp,
+    swayFreq,
+    startTime: Date.now()
+  };
+  balloons.push(balloonObj);
+  
+  const handler = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    popBalloon(balloonObj);
+  };
+  balloon.addEventListener('click', handler);
+  balloon.addEventListener('touchstart', handler, { passive: false });
+}
+
+function popBalloon(b) {
+  if (!gameRunning || !balloons.includes(b)) return;
+  
+  playSFX('pop');
+  
+  const rect = b.element.getBoundingClientRect();
+  
+  const pop = document.createElement('div');
+  pop.className = 'pop';
+  pop.textContent = b.isCorrect ? '✨' : '💥';
+  pop.style.left = (rect.left + rect.width/2 - 45) + 'px';
+  pop.style.top = (rect.top + rect.height/2 - 45) + 'px';
+  container.appendChild(pop);
+  setTimeout(() => pop.remove(), 500);
+  
+  const fs = document.createElement('div');
+  fs.className = 'floating-score';
+  fs.style.left = (rect.left + rect.width/2 - 50) + 'px';
+  fs.style.top = (rect.top) + 'px';
+  
+  if (b.isCorrect) {
+    score += 10;
+    correctCount++;
+    fs.textContent = '+10 ⭐';
+    fs.style.color = '#2a9d8f';
+    setTimeout(() => playSFX('correct'), 80);
+    
+    if (correctCount > 0 && correctCount % 5 === 0) {
+      level++;
+      newQuestion();
+      setTimeout(() => playSFX('levelup'), 200);
+    }
+  } else {
+    lives--;
+    wrongCount++;
+    fs.textContent = `❌ ${b.region}`;
+    fs.style.color = '#e63946';
+    fs.style.fontSize = '18px';
+    setTimeout(() => playSFX('wrong'), 80);
+    
+    if (lives <= 0) {
+      setTimeout(endGame, 400);
+    }
+  }
+  
+  container.appendChild(fs);
+  setTimeout(() => fs.remove(), 1200);
+  
+  b.element.remove();
+  balloons = balloons.filter(x => x !== b);
+  updateHUD();
+}
+
+function updateBalloons() {
+  if (gameRunning) {
+    balloons.forEach(b => {
+      b.y += b.speed;
+      const elapsed = Date.now() - b.startTime;
+      const sway = Math.sin(elapsed * b.swayFreq) * b.swayAmp;
+      b.element.style.bottom = (b.y - 220) + 'px';
+      b.element.style.left = (b.baseX + sway) + 'px';
+      
+      if (b.y > window.innerHeight + 250) {
+        b.element.remove();
+        balloons = balloons.filter(x => x !== b);
+      }
+    });
+  }
+  animFrame = requestAnimationFrame(updateBalloons);
+}
+
+function updateHUD() {
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('livesVal').textContent = lives;
+  document.getElementById('timerVal').textContent = timer;
+  document.getElementById('levelVal').textContent = level;
+}
+
+function endGame() {
+  gameRunning = false;
+  clearInterval(timerInterval);
+  clearInterval(balloonInterval);
+  stopMusic();
+  balloons.forEach(b => b.element.remove());
+  balloons = [];
+  
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('correctCount').textContent = correctCount;
+  document.getElementById('wrongCount').textContent = wrongCount;
+  document.getElementById('finalLevel').textContent = level;
+  
+  let rank = '';
+  if (score >= 200) rank = '🏆 HK Geography Master! ⭐⭐⭐⭐⭐';
+  else if (score >= 150) rank = '🥇 Excellent! ⭐⭐⭐⭐';
+  else if (score >= 100) rank = '🥈 Great Job! ⭐⭐⭐';
+  else if (score >= 50) rank = '🥉 Good Try! ⭐⭐';
+  else rank = '💪 Keep Practising! ⭐';
+  document.getElementById('rank').textContent = rank;
+  
+  document.getElementById('endTitle').textContent = lives <= 0 ? '💔 Game Over!' : '🎉 Time\'s Up!';
+  document.getElementById('endScreen').classList.remove('hidden');
+  hud.classList.add('hidden');
+  questionEl.classList.add('hidden');
+}
+
+function restartGame() {
+  startGame();
+}
+
+document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+</script>
+
+</body>
+</html>
